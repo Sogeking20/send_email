@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Importer</title>
+    {% load static %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'emails/style.css' %}">
+</head>
+<body>
+    <div id="progress-bar">
+        <p id="status">Чтение сообщений...</p>
+        <progress value="0" max="100" id="progress"></progress>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Тема сообщения</th>
+                <th>Дата отправки</th>
+                <th>Дата получения</th>
+                <th>Описание</th>
+                <th>Прикрепленные файлы</th>
+            </tr>
+        </thead>
+        <tbody id="messages"></tbody>
+    </table>
+
+    <script>
+        function updateProgressBar(progress) {
+            $('#progress').val(progress);
+        }
+
+        function fetchEmails() {
+            $.get('/status/', function(data) {
+                if (data.status === 'done') {
+                    fetchMessages();
+                } else if (data.status === 'no_account') {
+                    $('#status').text('Нет доступных аккаунтов');
+                }
+            });
+        }
+
+        function fetchMessages() {
+            $.get('/messages/', function(data) {
+                $('#messages').empty();
+                data.messages.forEach(function(message) {
+                    var newRow = '<tr>';
+                    newRow += '<td>' + message.subject + '</td>';
+                    newRow += '<td>' + message.sent_date + '</td>';
+                    newRow += '<td>' + message.received_date + '</td>';
+                    newRow += '<td>' + message.body + '</td>';
+                    newRow += '<td>' + message.attachments.join(', ') + '</td>';
+                    newRow += '</tr>';
+                    $('#messages').append(newRow);
+                });
+                $('#status').text('Все сообщения загружены');
+            });
+        }
+
+        $(document).ready(function() {
+            fetchEmails();
+            var progress = 0;
+            var interval = setInterval(function() {
+                if (progress < 100) {
+                    progress += 10;
+                    updateProgressBar(progress);
+                } else {
+                    clearInterval(interval);
+                }
+            }, 500);  // Update progress every 500ms
+        });
+    </script>
+</body>
+</html>
